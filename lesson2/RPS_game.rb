@@ -1,3 +1,48 @@
+# rps_game.rb
+
+class Move
+  VALUES = ['rock', 'paper', 'scissors']
+  def initialize(value)
+    @value = value
+  end
+
+  def scissors?
+    @value == 'scissors'
+  end
+
+  def rock?
+    @value == 'rock'
+  end
+
+  def paper?
+    @value == 'paper'
+  end
+
+  def >(other_move)
+    if rock?
+      other_move.scissors?
+    elsif paper?
+      other_move.rock?
+    elsif scissors?
+      other_move.paper?
+    end
+  end
+
+  def <(other_move)
+    if rock?
+      other_move.paper?
+    elsif paper?
+      other_move.scissors?
+    elsif scissors?
+      other_move.rock?
+    end
+  end
+
+  def to_s
+    @value
+  end
+end
+
 class Player
   attr_accessor :move, :name
 
@@ -22,23 +67,22 @@ class Human < Player
   def choose
     choice = nil
     loop do
-      puts "Please choose: #{CHOICES.join(', ')}"
+      puts "Please choose: #{Move::VALUES.join(', ')}"
       choice = gets.chomp
-      break if CHOICES.include? choice
+      break if Move::VALUES.include? choice
       puts "Sorry, invalid choice."
     end
-    self.move = choice
+    self.move = Move.new(choice)
   end
 end
 
 class Computer < Player
-  CHOICES = %w(Rock Paper Scissors)
   def set_name
     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
   def choose
-    self.move = CHOICES.sample
+    self.move = Move.new(Move::VALUES.sample)
   end
 end
 
@@ -57,23 +101,18 @@ class RPSGame
     puts "Thanks for playing Rock, Paper, Scissors. Goodbye!"
   end
 
-  def display_winner
+  def display_moves
     puts "#{human.name} chose #{human.move}."
     puts "#{computer.name} chose #{computer.move}."
+  end
 
-    case human.move
-    when "Rock"
-      puts "It's a tie!" if computer.move == "Rock"
-      puts "#{human.name} won!" if computer.move == "Scissors"
-      puts "#{computer.name} won!" if computer.move == "Paper"
-    when "Paper"
-      puts "It's a tie!" if computer.move == "Paper"
-      puts "#{human.name}  won!" if computer.move == "Rock"
-      puts "#{computer.name} won!" if computer.move == "Scissors"
-    when "Scissors"
-      puts "It's a tie!" if computer.move == "Scissors"
-      puts "#{human.name}  won!" if computer.move == "Paper"
-      puts "#{computer.name} won!" if computer.move == "Rock"
+  def display_winner
+    if human.move > computer.move
+      puts "#{human.name} won!"
+    elsif human.move < computer.move
+      puts "#{computer.name} won!"
+    else
+      puts "It's a tie!"
     end
   end
 
@@ -86,8 +125,7 @@ class RPSGame
       puts "Sorry, must be y or n."
     end
 
-    return true if answer == 'y'
-    return false
+    answer == 'y'
   end
 
   def play
@@ -96,6 +134,7 @@ class RPSGame
     loop do
       human.choose
       computer.choose
+      display_moves
       display_winner
       break unless play_again?
     end
