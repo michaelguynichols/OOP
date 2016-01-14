@@ -1,6 +1,4 @@
-# rps_game.rb
-require 'pry'
-
+# rpsls_game.rb
 class Rounds
   attr_accessor :rounds
   def initialize
@@ -47,40 +45,56 @@ class Score
 end
 
 class Move
-  VALUES = ['rock', 'paper', 'scissors']
+  VALUES = %w(r p s l S)
   def initialize(value)
     @value = value
   end
 
   def scissors?
-    @value == 'scissors'
+    @value == 's'
   end
 
   def rock?
-    @value == 'rock'
+    @value == 'r'
   end
 
   def paper?
-    @value == 'paper'
+    @value == 'p'
+  end
+
+  def lizzard?
+    @value == 'l'
+  end
+
+  def spock?
+    @value == 'S'
   end
 
   def >(other_move)
     if rock?
-      other_move.scissors?
+      other_move.scissors? || other_move.lizzard?
     elsif paper?
-      other_move.rock?
+      other_move.rock? || other_move.spock?
     elsif scissors?
-      other_move.paper?
+      other_move.paper? || other_move.lizzard?
+    elsif lizzard?
+      other_move.spock? || other_move.paper?
+    elsif spock?
+      other_move.scissors? || other_move.rock?
     end
   end
 
   def <(other_move)
     if rock?
-      other_move.paper?
+      other_move.paper? || other_move.spock?
     elsif paper?
-      other_move.scissors?
+      other_move.scissors? || other_move.lizzard?
     elsif scissors?
-      other_move.rock?
+      other_move.rock? || other_move.spock?
+    elsif lizzard?
+      other_move.scissors? || other_move.rock?
+    elsif spock?
+      other_move.lizzard? || other_move.paper?
     end
   end
 
@@ -90,56 +104,11 @@ class Move
 end
 
 class Player
-  attr_accessor :move, :name, :score, :history
+  attr_accessor :move, :name, :score
 
   def initialize
     set_name
     @score = Score.new
-    @history = []
-  end
-
-  def add_to_history
-    history << self.move
-  end
-
-  def history
-    @history
-  end
-
-  def build_history
-    move_count = {}
-    history.each do |mv|
-      str_mv = mv.to_s
-      if move_count.has_key?(str_mv)
-        move_count[str_mv] = move_count[str_mv] + 1
-      else
-        move_count[str_mv] = 1
-      end
-    end
-    move_count
-  end
-
-  def calculate_history
-    move_percents = {}
-    hist_count = build_history
-    total = hist_count.values.inject{|sum,x| sum + x }
-    hist_count.each do |mv, count|
-      move_percents[mv] = Float(count) / Float(total)
-    end
-    move_percents
-  end
-
-  def max_in_history
-    history = calculate_history
-    max_move = ''
-    max_percent = 0
-    history.each do |move, percent|
-      if percent > max_percent
-        max_percent = percent
-        max_move = move
-      end
-    end
-    max_move
   end
 end
 
@@ -173,26 +142,13 @@ class Computer < Player
     self.name = ['R2D2', 'Hal', 'Chappie', 'Sonny', 'Number 5'].sample
   end
 
-  def choose(player)
-    self.move = adapt_to_history(player)
-  end
-
-  def adapt_to_history(player)
-    max_move = player.max_in_history
-    puts "Percents: #{player.calculate_history}"
-    puts "Max: #{max_move}"
-    final_move = ''
-    loop do
-      final_move = Move.new(Move::VALUES.sample)
-      puts "Loop move: #{final_move}"
-      break if final_move.to_s != max_move.to_s
-    end
-    puts "Final: #{final_move}"
-    final_move
+  def choose
+    self.move = Move.new(Move::VALUES.sample)
   end
 end
 
 class RPSGame
+  CHOICES_INTO_WORDS = { "r" => "rock", "p" => "paper", "s" => "scissors", "l" => "lizard", "S" => "Spock" }
   attr_accessor :human, :computer, :rounds
   def initialize
     @human = Human.new
@@ -205,12 +161,12 @@ class RPSGame
   end
 
   def display_goodbye_message
-    puts "#{determine_winner.name} won the match! Thanks for playing Rock, Paper, Scissors. Goodbye!" rescue puts "Thanks for playing Rock, Paper, Scissors. Goodbye!"
+    puts "#{determine_winner.name} won the match! Thanks for playing Rock, Paper, Scissors. Goodbye!"
   end
 
   def display_moves
-    puts "#{human.name} chose #{human.move}."
-    puts "#{computer.name} chose #{computer.move}."
+    puts "#{human.name} chose #{CHOICES_INTO_WORDS[human.move.to_s]}."
+    puts "#{computer.name} chose #{CHOICES_INTO_WORDS[computer.move.to_s]}."
   end
 
   def display_winner
@@ -236,16 +192,6 @@ class RPSGame
     puts "#{computer.name}: #{computer.score}"
   end
 
-  def update_history
-    human.add_to_history
-    computer.add_to_history
-  end
-
-  def display_history
-    puts "#{human.name}'s move history: #{human.history.join(', ')}"
-    puts "#{computer.name}'s move history: #{computer.history.join(', ')}"
-  end
-
   def play_again?
     answer = nil
     loop do
@@ -269,7 +215,7 @@ class RPSGame
     loop do
       loop do
         human.choose
-        computer.choose(human)
+        computer.choose
         display_moves
         display_winner
         winner = determine_winner
@@ -277,8 +223,6 @@ class RPSGame
           winner.score.update
         end
         display_score
-        update_history
-        display_history
         break if rounds.match_over?(human, computer)
         break unless play_again?
       end
