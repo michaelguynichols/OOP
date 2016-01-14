@@ -179,15 +179,11 @@ class Computer < Player
 
   def adapt_to_history(player)
     max_move = player.max_in_history
-    puts "Percents: #{player.calculate_history}"
-    puts "Max: #{max_move}"
     final_move = ''
     loop do
       final_move = Move.new(Move::VALUES.sample)
-      puts "Loop move: #{final_move}"
       break if final_move.to_s != max_move.to_s
     end
-    puts "Final: #{final_move}"
     final_move
   end
 end
